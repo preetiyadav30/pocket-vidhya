@@ -39,7 +39,7 @@ const logout=async(req,res,next)=>{
 }
 
 const signup = async (req, res, next) => {
-    // try {
+    try {
 
         await db.query('select * from user where mobile_no=? and username=?', [req.body.mobile_no, req.body.username], (err1, result, feilds) => {
 
@@ -59,7 +59,7 @@ const signup = async (req, res, next) => {
                     }
                 if(bresult){
                
-                const token = jwt.sign({ data: result }, process.env.POKET_VIDHYASACRET)
+                const token = jwt.sign({ data: result }, process.env.JWT_SECRET_KEY)
                 if (result.length) {
                     res.send({
                         message: "User Already Exists",
@@ -87,7 +87,7 @@ const signup = async (req, res, next) => {
                                 }
 
                                 if (result) {
-                                    const token = jwt.sign({ data: result }, process.env.POKET_VIDHYASACRET)
+                                    const token = jwt.sign({ data: result }, process.env.JWT_SECRET_KEY)
 
                                     res.status(200).send({
                                         success: true,
@@ -107,19 +107,19 @@ const signup = async (req, res, next) => {
             }
         })
 
-    // }
-    // catch (err) {
-    //     res.status(400).send({
-    //         seccess: false,
-    //         err: err.message
+    }
+    catch (err) {
+        res.status(400).send({
+            seccess: false,
+            err: err.message
             
-    //     })
-    // }
+        })
+    }
 }
 
 const avtar_category = async (req, res) => {
     try {
-        await db.query('Select * from Avtar', (err, results, feilds) => {
+        await db.query('Select * from avtar', (err, results, feilds) => {
             if (err) {
                 res.status(400).send({
                     success: false,
@@ -163,9 +163,6 @@ const adminLogin1 = async (req, res, next) => {
             }
           else {
            const  is_PasswordCorrect=bcrypt.compareSync(req.body.password,result[0].password)
-           bcrypt.com
-            
-            //  console.log(result)
                        if(is_PasswordCorrect==true){
                           const token = jwt.sign({ data: [result[0].Admin_id,result[0].username] }, process.env.POCKET_ADMIN_SECRET)
                            res.status(200).send({
@@ -179,34 +176,13 @@ const adminLogin1 = async (req, res, next) => {
                             success:false,
                             msg:"Wrong Password"
                            })
-                       }
+                     }
                  
           }
-
-            // else {
-            //     is_PasswordCorrect = bcrypt.compareSync(req.body.password, result[0].password, (err) => {
-            //             if (err) {
-            //                 res.status(400).send({
-            //                     success: false,
-            //                     msg: "Wrong password",
-
-            //                 })
-            //             }
-            //             else {
-            //                 const token = jwt.sign({ data: result }, process.env.POCKET_ADMIN_SECRET)
-            //                 res.status(200).send({
-            //                     success: true,
-            //                     msg: `User login Successfull`,
-            //                     results: result,
-            //                     token: token
-            //                 })
-            //             }
-            //         })
-            // }
         }
-
     })
 }
+
 
 const add_question = async (req, res, next) => {
     try {
@@ -416,12 +392,13 @@ const admin_signup = async (req, res, next) => {
 const admin_update_question = async (req, res, next) => {
 
     try {
+        console.log("hello")
         const auth = req.headers.authorization.split(" ")[1]
         const decode = jwt.decode(auth)
-
+       
         const decoded_Username = decode.data[0].Admin_id
-
-        await db.query(`Update question set Question=? and category=?, Option1=? and option2=? and optionn3=? and option4=? and correct_option=? and Description=? and Language=? and q_order=? and Status=? and updated_at=${now()} where question_id=? ,added_by=?`, [req.body.Question, req.body.category, req.body.option1, req.body.option2, req.body.option3, req.body.option4, req.body.correct_Option, req.body.Description, req.body.Language, req.body.q_order, req.body.Status, req.body.question_id, decoded_Username], (err, result, feilds) => {
+        console.log(decoded_Username);
+        await db.query(`Update question set Question=?,category=?,Option1=?,option2=?,optionn3=?,option4=?,correct_option=?,Description=?,Language=?,q_order=?,Status=?,updated_at=${now()} where question_id=? ,added_by=?`, [req.body.Question,req.body.category,req.body.option1,req.body.option2,req.body.option3,req.body.option4,req.body.correct_Option,req.body.Description,req.body.Language, req.body.q_order, req.body.Status,req.body.question_id,decoded_Username], (err, result, feilds) => {
             if (err) {
                 res.status(400).send({
                     success: false,
@@ -839,7 +816,115 @@ const admin_getQuestion=async(req,res,next)=>{
     }
 }
 
+const adminLogin = async (req, res, next) => {
+    try {
+        const body = req.body;
+        await db.query(`select*from admin where username=? and email=? and password=?`, [body.username, body.email, body.password], (err, result, feilds) => {
+            if (err) {
+                res.status(400).send({
+                    success: false,
+                    err: err
+                })
+            }
+            if (!result) {
+                res.status(404).send({
+                    success: false,
+                    msg: "Admin not found with this email and password"
+                });
+            }
+            else {
+                const results = compareSync(body.password, result.password);
+                if (results) {
+                    result.password = undefined;
+                    const token = req.headers.authorization;
+                    if (!token) {
+                        res.status(404).send({
+                            success: false,
+                            msg: "token not provided"
+                        });
+                    } else {
+                        jwt.verify(token, process.env.ADMIN_JWT_KEY, (jwterr, jwtresult) => {
+                            if (jwterr) {
+                                res.status(400).send({
+                                    success: false,
+                                    err: jwterr
+                                });
+                            } else {
+                                res.status(200).send({
+                                    success: true,
+                                    result: jwtresult,
+                                    msg: "login successully"
+                                })
+                            }
+                        })
+                    }
+                } else {
+                    res.status(401).send({
+                        success: false,
+                        msg: "invalid email or password"
+                    })
+                }
+            }
+        })
+    } catch (error) {
+        res.status(500).send({
+            success: false,
+            err: error
+        })
+    }
+}
+
+const admin_delete_question = async (req,res,next)=>{
+    try {
+    // const question = req.params;
+     await db.query(`select*from questionnaire where Question_id=?`,[req.params.Question_id],(err,result,feilds)=>{
+         if(err){
+             res.status(400).json({
+                 success:false,
+                 err:err
+             });
+         }
+         if(!result){
+             res.status(404).json({
+                 success:false,
+                 msg:'data not found with Question_id'
+             });
+         }else{
+             
+             const id = question.Question_id;
+             db.query(`delete from questionnaire where Question_id =? `[id],(err,result,feilds)=>{
+                 if(err){
+                    // console.log(question.Question_id);
+                     res.status(400).json({
+                         success:false,
+                         msg:"error",
+                         err:err
+                     });
+                 } 
+                    if(!result){
+                     res.status(404).json({
+                         msg:"id not found"
+                     })
+                }else{
+                     res.status(200).send({
+                         success:true,
+                         msg:'data deleted'
+                     });
+                    }
+                 
+             })
+         }
+     })
+    } catch (error) {
+       res.status(500).json({
+         success:false,
+         error:error
+       })
+    }
+ }
+
 module.exports = {
     signup, avtar_category, add_question, question, add_avtar, admin_signup, get_question_user, admin_update_question, admin_add_category, admin_add_language, admin_delete_language, total_user, total_language, total_category, admin_update_questionStatus, adminLogin1, answer1, quiz_category, admin_Statistics,logout,admin_get_user,admin_getQuestion
+    ,adminLogin,admin_delete_question
 }
 // increase_attemptscfgydebn

@@ -61,6 +61,8 @@ router.post('/admin/delete_language',adminValidation,controller.admin_delete_lan
 
 router.post('/admin/add_question',adminValidation,controller.add_question)
 
+router.delete('/admin/delete/question',controller.admin_delete_question);
+
 router.post('/admin/Signup',controller.admin_signup)
 
 router.post('/admin/Login',controller.adminLogin1)
@@ -71,7 +73,7 @@ router.get('/admin/getStatistics',adminValidation,controller.admin_Statistics)
 
 router.get('/admin/getQuestions:',controller.admin_getQuestion)
 
-router.get('/admin/getUsers?',adminValidation,controller.admin_get_user)
+router.get('/admin/getUsers',adminValidation,controller.admin_get_user)
 
 router.post('/user/answer',validation,controller1.answer_attempt)
 

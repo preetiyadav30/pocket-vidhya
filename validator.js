@@ -9,7 +9,7 @@ try{
 
     if(authorizationHeader){
         const token = authorizationHeader.split(" ")[1]
-        jwt.verify(token,process.env.POKET_VIDHYASACRET,(error,payload)=>{
+        jwt.verify(token,process.env.JWT_SECRET_KEY,(error,payload)=>{
             if (error) {
                 response.send("please provide valid token");
                 console.log(payload);
